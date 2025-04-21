@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内存管理系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: white;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-weight: bold;
+            font-size: 18px;
+            margin: 0;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #2196F3;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 50%;
+            max-width: 500px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .tab.active {
+            border-bottom: 2px solid #4CAF50;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .nodes-container {
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>内存管理系统</h1>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="collections">集合</div>
+            <div class="tab" data-tab="nodes">节点</div>
+        </div>
+
+        <div class="tab-content active" id="collections-tab">
+            <div class="section">
+                <div class="card-header">
+                    <h2>内存集合</h2>
+                    <button class="btn btn-primary" id="add-collection-btn">添加集合</button>
+                </div>
+                <div id="collections-container">
+                    <!-- 集合将在这里动态添加 -->
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="nodes-tab">
+            <div class="section">
+                <div class="card-header">
+                    <h2>内存节点</h2>
+                    <div>
+                        <select id="collection-selector">
+                            <option value="">选择集合...</option>
+                        </select>
+                        <input type="text" id="manual-memory-id" placeholder="或手动输入memoryID" style="width: 200px; margin: 0 10px;">
+                        <button class="btn btn-primary" id="add-node-btn" disabled>添加节点</button>
+                    </div>
+                </div>
+                <div id="nodes-container">
+                    <!-- 节点将在这里动态添加 -->
+                    <p>请先选择一个集合或输入memoryID</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加集合的模态框 -->
+    <div id="add-collection-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>添加新集合</h2>
+            <form id="add-collection-form">
+                <div class="form-group">
+                    <label for="collection-name">名称</label>
+                    <input type="text" id="collection-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="collection-description">描述</label>
+                    <textarea id="collection-description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="collection-metadata">元数据 (JSON)</label>
+                    <textarea id="collection-metadata" rows="5">{}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加节点的模态框 -->
+    <div id="add-node-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>添加新节点</h2>
+            <form id="add-node-form">
+                <div class="form-group">
+                    <label for="node-path">路径</label>
+                    <input type="text" id="node-path" required>
+                </div>
+                <div class="form-group">
+                    <label for="node-name">名称</label>
+                    <input type="text" id="node-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="node-description">描述</label>
+                    <textarea id="node-description" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="node-type">类型</label>
+                    <select id="node-type" required>
+                        <option value="json">JSON</option>
+                        <option value="markdown">Markdown</option>
+                        <option value="xml">XML</option>
+                        <option value="plaintext">纯文本</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="node-content">内容</label>
+                    <textarea id="node-content" rows="5"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑节点的模态框 -->
+    <div id="edit-node-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>编辑节点</h2>
+            <form id="edit-node-form">
+                <input type="hidden" id="edit-node-id">
+                <div class="form-group">
+                    <label for="edit-node-path">路径</label>
+                    <input type="text" id="edit-node-path" required readonly>
+                </div>
+                <div class="form-group">
+                    <label for="edit-node-name">名称</label>
+                    <input type="text" id="edit-node-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-node-description">描述</label>
+                    <textarea id="edit-node-description" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-node-content">内容</label>
+                    <textarea id="edit-node-content" rows="5"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">更新</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentCollectionId = '';
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化标签页切换
+            initTabs();
+
+            // 加载集合列表
+            loadCollections();
+
+            // 初始化模态框
+            initModals();
+
+            // 初始化添加集合按钮
+            document.getElementById('add-collection-btn').addEventListener('click', function() {
+                document.getElementById('add-collection-modal').style.display = 'block';
+            });
+
+            // 初始化添加集合表单
+            document.getElementById('add-collection-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addCollection();
+            });
+
+            // 监听手动输入 memoryID
+            document.getElementById('manual-memory-id').addEventListener('input', function() {
+                const manualId = this.value.trim();
+                if (manualId) {
+                    currentCollectionId = manualId;
+                    document.getElementById('collection-selector').value = '';
+                    document.getElementById('add-node-btn').disabled = false;
+                    loadNodes(manualId);
+                } else if (!document.getElementById('collection-selector').value) {
+                    // 如果手动ID为空且下拉框也未选择
+                    currentCollectionId = '';
+                    document.getElementById('add-node-btn').disabled = true;
+                    document.getElementById('nodes-container').innerHTML = '<p>请先选择一个集合或输入memoryID</p>';
+                }
+            });
+
+            // 修改集合选择器事件，清空手动输入框
+            document.getElementById('collection-selector').addEventListener('change', function() {
+                currentCollectionId = this.value;
+                document.getElementById('manual-memory-id').value = '';
+                document.getElementById('add-node-btn').disabled = !currentCollectionId;
+                if (currentCollectionId) {
+                    loadNodes(currentCollectionId);
+                } else {
+                    document.getElementById('nodes-container').innerHTML = '<p>请先选择一个集合或输入memoryID</p>';
+                }
+            });
+
+            // 初始化添加节点按钮
+            document.getElementById('add-node-btn').addEventListener('click', function() {
+                document.getElementById('add-node-modal').style.display = 'block';
+            });
+
+            // 初始化添加节点表单
+            document.getElementById('add-node-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNode();
+            });
+
+            // 初始化编辑节点表单
+            document.getElementById('edit-node-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                updateNode();
+            });
+        });
+
+        // 初始化标签页切换
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有标签页的active类
+                    tabs.forEach(t => t.classList.remove('active'));
+                    // 添加当前标签页的active类
+                    this.classList.add('active');
+
+                    // 隐藏所有内容
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+
+                    // 显示当前内容
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId + '-tab').classList.add('active');
+                });
+            });
+        }
+
+        // 初始化模态框
+        function initModals() {
+            // 获取所有关闭按钮
+            const closeButtons = document.querySelectorAll('.close');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                }
+            });
+        }
+
+        // 加载集合列表
+        function loadCollections() {
+            // 发送RPC请求获取集合列表
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.GetAllCollections',
+                params: [{}],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('加载集合失败:', data.error);
+                    document.getElementById('collections-container').innerHTML = '<p>加载集合失败: ' + data.error.message + '</p>';
+                    return;
+                }
+
+                // 更新集合列表
+                updateCollectionsUI(data.result.collections);
+
+                // 更新集合选择器
+                updateCollectionSelector(data.result.collections);
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                document.getElementById('collections-container').innerHTML = '<p>加载集合失败: ' + error.message + '</p>';
+            });
+        }
+
+        // 更新集合UI
+        function updateCollectionsUI(collections) {
+            const container = document.getElementById('collections-container');
+
+            if (!collections || collections.length === 0) {
+                container.innerHTML = '<p>没有找到集合。点击"添加集合"按钮创建新集合。</p>';
+                return;
+            }
+
+            let html = '';
+            collections.forEach(collection => {
+                html += `
+                    <div class="card" data-id="${collection.id}">
+                        <div class="card-header">
+                            <h3 class="card-title">${collection.name}</h3>
+                            <button class="btn btn-danger delete-collection" data-id="${collection.id}">删除</button>
+                        </div>
+                        <p>${collection.description}</p>
+                        <p><strong>创建时间:</strong> ${new Date(collection.createdAt).toLocaleString()}</p>
+                        <p><strong>更新时间:</strong> ${new Date(collection.updatedAt).toLocaleString()}</p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // 添加删除集合的事件处理
+            document.querySelectorAll('.delete-collection').forEach(button => {
+                button.addEventListener('click', function() {
+                    const collectionId = this.getAttribute('data-id');
+                    if (confirm('确定要删除这个集合吗？这将删除其中的所有节点！')) {
+                        deleteCollection(collectionId);
+                    }
+                });
+            });
+        }
+
+        // 更新集合选择器
+        function updateCollectionSelector(collections) {
+            const selector = document.getElementById('collection-selector');
+
+            // 清除现有选项，保留第一个
+            while (selector.options.length > 1) {
+                selector.remove(1);
+            }
+
+            // 添加新选项
+            collections.forEach(collection => {
+                const option = document.createElement('option');
+                option.value = collection.id;
+                option.textContent = collection.name;
+                selector.appendChild(option);
+            });
+        }
+
+        // 添加新集合
+        function addCollection() {
+            const name = document.getElementById('collection-name').value;
+            const description = document.getElementById('collection-description').value;
+            let metadata = {};
+
+            try {
+                const metadataText = document.getElementById('collection-metadata').value;
+                if (metadataText && metadataText.trim() !== '') {
+                    metadata = JSON.parse(metadataText);
+                }
+            } catch (e) {
+                alert('元数据必须是有效的JSON格式');
+                return;
+            }
+
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memManager.Create',
+                params: [{
+                    name: name,
+                    description: description,
+                    metadata: metadata
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('创建集合失败:', data.error);
+                    alert('创建集合失败: ' + data.error.message);
+                    return;
+                }
+
+                // 关闭模态框
+                document.getElementById('add-collection-modal').style.display = 'none';
+
+                // 重置表单
+                document.getElementById('add-collection-form').reset();
+
+                // 重新加载集合
+                loadCollections();
+
+                alert('集合创建成功！');
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                alert('创建集合失败: ' + error.message);
+            });
+        }
+
+        // 删除集合
+        function deleteCollection(collectionId) {
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.DeleteCollection',
+                params: [{
+                    id: collectionId
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('删除集合失败:', data.error);
+                    alert('删除集合失败: ' + data.error.message);
+                    return;
+                }
+
+                // 重新加载集合
+                loadCollections();
+
+                // 如果当前选中的集合被删除，清空节点容器
+                if (currentCollectionId === collectionId) {
+                    currentCollectionId = '';
+                    document.getElementById('collection-selector').value = '';
+                    document.getElementById('nodes-container').innerHTML = '<p>请先选择一个集合或输入memoryID</p>';
+                    document.getElementById('add-node-btn').disabled = true;
+                }
+
+                alert('集合删除成功！');
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                alert('删除集合失败: ' + error.message);
+            });
+        }
+
+        // 加载节点列表
+        function loadNodes(collectionId) {
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.List',
+                params: [{
+                    memoryId: collectionId,
+                    filter: {}
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('加载节点失败:', data.error);
+                    document.getElementById('nodes-container').innerHTML = '<p>加载节点失败: ' + data.error.message + '</p>';
+                    return;
+                }
+
+                // 更新节点列表
+                updateNodesUI(data.result.nodes);
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                document.getElementById('nodes-container').innerHTML = '<p>加载节点失败: ' + error.message + '</p>';
+            });
+        }
+
+        // 更新节点UI
+        function updateNodesUI(nodes) {
+            const container = document.getElementById('nodes-container');
+
+            if (!nodes || nodes.length === 0) {
+                container.innerHTML = '<p>当前集合中没有节点。点击"添加节点"按钮创建新节点。</p>';
+                return;
+            }
+
+            let html = '';
+            nodes.forEach(node => {
+                html += `
+                    <div class="card" data-memory-id="${node.memoryId}" data-path="${node.path}">
+                        <div class="card-header">
+                            <h3 class="card-title">${node.name} (${node.path})</h3>
+                            <div>
+                                <button class="btn btn-secondary edit-node" data-memory-id="${node.memoryId}" data-path="${node.path}">编辑</button>
+                                <button class="btn btn-danger delete-node" data-memory-id="${node.memoryId}" data-path="${node.path}">删除</button>
+                            </div>
+                        </div>
+                        <p>${node.description || '无描述'}</p>
+                        <p><strong>类型:</strong> ${node.type}</p>
+                        <p><strong>内容:</strong></p>
+                        <pre>${node.content || '无内容'}</pre>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // 添加编辑节点的事件处理
+            document.querySelectorAll('.edit-node').forEach(button => {
+                button.addEventListener('click', function() {
+                    const memoryId = this.getAttribute('data-memory-id');
+                    const path = this.getAttribute('data-path');
+                    openEditNodeModal(memoryId, path);
+                });
+            });
+
+            // 添加删除节点的事件处理
+            document.querySelectorAll('.delete-node').forEach(button => {
+                button.addEventListener('click', function() {
+                    const memoryId = this.getAttribute('data-memory-id');
+                    const path = this.getAttribute('data-path');
+                    if (confirm('确定要删除这个节点吗？')) {
+                        deleteNode(memoryId, path);
+                    }
+                });
+            });
+        }
+
+        // 打开编辑节点模态框
+        function openEditNodeModal(memoryId, path) {
+            // 获取节点详情
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.Get',
+                params: [{
+                    memoryId: memoryId,
+                    path: path
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('获取节点详情失败:', data.error);
+                    alert('获取节点详情失败: ' + data.error.message);
+                    return;
+                }
+
+                const node = data.result.node;
+
+                // 填充表单
+                document.getElementById('edit-node-path').value = node.path;
+                document.getElementById('edit-node-name').value = node.name;
+                document.getElementById('edit-node-description').value = node.description || '';
+                document.getElementById('edit-node-content').value = node.content || '';
+
+                // 显示模态框
+                document.getElementById('edit-node-modal').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                alert('获取节点详情失败: ' + error.message);
+            });
+        }
+
+        // 添加新节点
+        function addNode() {
+            const path = document.getElementById('node-path').value;
+            const name = document.getElementById('node-name').value;
+            const description = document.getElementById('node-description').value;
+            const type = document.getElementById('node-type').value;
+            const content = document.getElementById('node-content').value;
+
+            // 确保有 memoryID
+            if (!currentCollectionId) {
+                alert('请先选择一个集合或输入memoryID');
+                return;
+            }
+
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.Add',
+                params: [{
+                    memoryId: currentCollectionId,
+                    node: {
+                        path: path,
+                        name: name,
+                        description: description || null,
+                        type: type,
+                        content: content || null
+                    }
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('创建节点失败:', data.error);
+                    alert('创建节点失败: ' + data.error.message);
+                    return;
+                }
+
+                // 关闭模态框
+                document.getElementById('add-node-modal').style.display = 'none';
+
+                // 重置表单
+                document.getElementById('add-node-form').reset();
+
+                // 重新加载节点
+                loadNodes(currentCollectionId);
+
+                alert('节点创建成功！');
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                alert('创建节点失败: ' + error.message);
+            });
+        }
+
+        // 更新节点
+        function updateNode() {
+            const path = document.getElementById('edit-node-path').value;
+            const name = document.getElementById('edit-node-name').value;
+            const description = document.getElementById('edit-node-description').value;
+            const content = document.getElementById('edit-node-content').value;
+
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.Update',
+                params: [{
+                    memoryId: currentCollectionId,
+                    path: path,
+                    updates: {
+                        name: name,
+                        description: description || null,
+                        content: content || null
+                    }
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('更新节点失败:', data.error);
+                    alert('更新节点失败: ' + data.error.message);
+                    return;
+                }
+
+                // 关闭模态框
+                document.getElementById('edit-node-modal').style.display = 'none';
+
+                // 重新加载节点
+                loadNodes(currentCollectionId);
+
+                alert('节点更新成功！');
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                alert('更新节点失败: ' + error.message);
+            });
+        }
+
+        // 删除节点
+        function deleteNode(memoryId, path) {
+            const rpcRequest = {
+                jsonrpc: '2.0',
+                method: 'memory.Delete',
+                params: [{
+                    memoryId: memoryId,
+                    path: path
+                }],
+                id: Date.now()
+            };
+
+            fetch('/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(rpcRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('删除节点失败:', data.error);
+                    alert('删除节点失败: ' + data.error.message);
+                    return;
+                }
+
+                // 重新加载节点
+                loadNodes(memoryId);
+
+                alert('节点删除成功！');
+            })
+            .catch(error => {
+                console.error('请求错误:', error);
+                alert('删除节点失败: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

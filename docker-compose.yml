@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mmp_db
+    environment:
+      POSTGRES_DB: mmp_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mmp_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mmp_app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "18080:8080"
+    environment:
+      DB_DRIVER: ${DB_DRIVER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:-host=db port=5432 user=user password=password dbname=mmp_db sslmode=disable}
+
+volumes:
+  postgres_data:
