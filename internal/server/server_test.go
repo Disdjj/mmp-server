@@ -13,9 +13,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// 测试辅助函数，创建临时的内存数据库
+// 测试辅助函数，创建临时的记忆数据库
 func setupTestDB(t *testing.T) *gorm.DB {
-	// 使用SQLite内存数据库进行测试
+	// 使用SQLite记忆数据库进行测试
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("设置测试数据库失败: %v", err)

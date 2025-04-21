@@ -770,8 +770,8 @@ func (s *Server) GetAllCollections(r *http.Request, args *struct{}, result *GetA
 
 	dbResult := s.DB.WithContext(ctx).Find(&collections)
 	if dbResult.Error != nil {
-		log.Printf("获取所有内存集合时出错: %v", dbResult.Error)
-		return newRpcError(json2.E_INTERNAL, "获取内存集合列表失败")
+		log.Printf("获取所有记忆集合时出错: %v", dbResult.Error)
+		return newRpcError(json2.E_INTERNAL, "获取记忆集合列表失败")
 	}
 
 	*result = GetAllCollectionsResult{

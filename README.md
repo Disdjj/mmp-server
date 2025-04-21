@@ -9,7 +9,6 @@
 *   使用 GORM 进行数据库交互，支持 PostgreSQL 和 SQLite。
 *   GORM 自动迁移数据库结构。
 *   提供 Docker 和 Docker Compose 配置，方便部署和运行。
-
 ## 技术栈
 
 *   Go 1.24+
@@ -119,32 +118,45 @@
 
 ## 示例 JSON-RPC 请求
 
-**创建 Memory Collection:**
+**获取所有集合:**
 
 ```bash
-curl -X POST http://localhost:8080/rpc \
+curl -X POST http://localhost:18080/rpc \
      -H 'Content-Type: application/json' \
      -d '{
           "jsonrpc": "2.0",
-          "method": "memManager.create",
-          "params": {
+          "method": "memory.GetAllCollections",
+          "params": [{}],
+          "id": 1
+        }'
+```
+
+**创建 Memory Collection:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memManager.Create",
+          "params": [{
             "name": "MyGormMemory",
             "description": "A memory collection managed by GORM",
             "metadata": {"source": "example"}
-          },
-          "id": 1
+          }],
+          "id": 2
         }'
 ```
 
 **添加 Memory Node:** (假设上面返回的 id 是 "mm-...")
 
 ```bash
-curl -X POST http://localhost:8080/rpc \
+curl -X POST http://localhost:18080/rpc \
      -H 'Content-Type: application/json' \
      -d '{
           "jsonrpc": "2.0",
-          "method": "memory.add",
-          "params": {
+          "method": "memory.Add",
+          "params": [{
             "memoryId": "mm-...",
             "node": {
               "path": "/info/status",
@@ -152,8 +164,24 @@ curl -X POST http://localhost:8080/rpc \
               "type": "json",
               "content": "{\"online\": true, \"version\": \"1.0\"}"
             }
-          },
-          "id": 2
+          }],
+          "id": 3
+        }'
+```
+
+**获取节点列表:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memory.List",
+          "params": [{
+            "memoryId": "mm-...",
+            "filter": {}
+          }],
+          "id": 4
         }'
 ```
 
@@ -168,3 +196,13 @@ GORM 的 `AutoMigrate` 会在下次启动时尝试更新数据库结构（注意
         *   PostgreSQL: `export DATABASE_URL="host=localhost port=5432 user=user password=password dbname=mmp_db sslmode=disable"` (需要本地运行 PostgreSQL)
         *   SQLite: `export DATABASE_URL="local_mmp.db"`
     *   运行: `go run ./cmd/mmp-server/main.go`
+
+## Web 界面
+
+服务器包含一个简单的 Web 界面，可用于管理记忆集合和节点。启动服务器后，可通过浏览器访问 `http://localhost:18080/` 使用该界面。
+
+主要功能包括：
+* 查看所有记忆集合列表
+* 创建和删除记忆集合
+* 查看、创建、编辑和删除节点
+* 支持手动输入 memoryID 访问任意节点，无需先从下拉菜单选择
