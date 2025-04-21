@@ -69,39 +69,6 @@ func isDuplicateKeyError(err error) bool {
 	return strings.Contains(errStr, "unique constraint") || strings.Contains(errStr, "duplicate key value violates unique constraint") // PostgreSQL
 }
 
-// Convert GORM model to the format expected by RPC response (if needed)
-// In many cases, the GORM model can be returned directly if JSON tags match.
-func convertMemoryNodeToRPC(node *models.MemoryNode) map[string]interface{} {
-	// Example conversion if direct marshalling isn't sufficient or needs modification
-	// For now, assuming direct marshalling works due to matching json tags in model
-	data := map[string]interface{}{
-		"path":      node.Path,
-		"name":      node.Name,
-		"type":      node.Type,
-		"createdAt": node.CreatedAt,
-		"updatedAt": node.UpdatedAt,
-		"needInit":  node.NeedInit,
-		// Handle NullString fields appropriately
-		"description": nil,
-		"attention":   nil,
-		"format":      nil,
-		"content":     nil,
-	}
-	if node.Description.Valid {
-		data["description"] = node.Description.String
-	}
-	if node.Attention.Valid {
-		data["attention"] = node.Attention.String
-	}
-	if node.Format.Valid {
-		data["format"] = node.Format.String
-	}
-	if node.Content.Valid {
-		data["content"] = node.Content.String
-	}
-	return data
-}
-
 func newRpcError(code json2.ErrorCode, message string) *json2.Error {
 	return &json2.Error{Code: code, Message: message}
 }
@@ -224,12 +191,12 @@ func (s *Server) ApplyTemplate(r *http.Request, args *ApplyTemplateRequest, resu
 					MemoryID:    args.MemoryID,
 					Path:        nodeTpl.Path,
 					Name:        nodeTpl.Name,
-					Description: sql.NullString{String: nodeTpl.Description, Valid: nodeTpl.Description != ""},
-					Attention:   sql.NullString{String: nodeTpl.Attention, Valid: nodeTpl.Attention != ""},
+					Description: nodeTpl.Description,
+					Attention:   nodeTpl.Attention,
 					NeedInit:    nodeTpl.NeedInit,
-					Format:      sql.NullString{String: nodeTpl.Format, Valid: nodeTpl.Format != ""},
+					Format:      nodeTpl.Format,
 					Type:        nodeTpl.Type,
-					Content:     sql.NullString{String: nodeTpl.Content, Valid: nodeTpl.Content != ""},
+					Content:     nodeTpl.Content,
 				}
 
 				// GORM's Clauses(clause.OnConflict...) handles INSERT ON CONFLICT DO UPDATE
@@ -338,12 +305,12 @@ func (s *Server) Add(r *http.Request, args *AddRequest, result *AddResult) error
 		MemoryID:    args.MemoryID,
 		Path:        args.Node.Path,
 		Name:        args.Node.Name,
-		Description: sql.NullString{String: args.Node.Description, Valid: args.Node.Description != ""},
-		Attention:   sql.NullString{String: args.Node.Attention, Valid: args.Node.Attention != ""},
+		Description: args.Node.Description,
+		Attention:   args.Node.Attention,
 		NeedInit:    args.Node.NeedInit,
-		Format:      sql.NullString{String: args.Node.Format, Valid: args.Node.Format != ""},
+		Format:      args.Node.Format,
 		Type:        args.Node.Type,
-		Content:     sql.NullString{String: args.Node.Content, Valid: true}, // Content is required for Add
+		Content:     args.Node.Content, // Content is required for Add
 	}
 
 	// Use GORM's OnConflict clause for Upsert behavior
@@ -436,8 +403,8 @@ func (s *Server) GetInitNodes(r *http.Request, args *GetInitNodesRequest, result
 		initNodesResult[i] = GetInitNodesResultItem{
 			Path:        n.Path,
 			Name:        n.Name,
-			Description: n.Description.String,
-			Attention:   n.Attention.String,
+			Description: n.Description,
+			Attention:   n.Attention,
 		}
 	}
 
@@ -521,7 +488,7 @@ func (s *Server) List(r *http.Request, args *ListRequest, result *ListResult) er
 		listNodes[i] = ListNodeInfo{
 			Path:        n.Path,
 			Name:        n.Name,
-			Description: n.Description.String,
+			Description: n.Description,
 		}
 	}
 

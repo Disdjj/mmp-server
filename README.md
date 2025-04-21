@@ -185,6 +185,122 @@ curl -X POST http://localhost:18080/rpc \
         }'
 ```
 
+**获取单个节点:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memory.Get",
+          "params": [{
+            "memoryId": "mm-...",
+            "path": "/info/status"
+          }],
+          "id": 5
+        }'
+```
+
+**更新节点:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memory.Update",
+          "params": [{
+            "memoryId": "mm-...",
+            "path": "/info/status",
+            "updates": {
+              "name": "Updated System Status",
+              "description": "Updated description",
+              "content": "{\"online\": true, \"version\": \"1.1\", \"updated\": true}"
+            }
+          }],
+          "id": 6
+        }'
+```
+
+**删除节点:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memory.Delete",
+          "params": [{
+            "memoryId": "mm-...",
+            "path": "/info/status"
+          }],
+          "id": 7
+        }'
+```
+
+**获取需要初始化的节点:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memory.GetInitNodes",
+          "params": [{
+            "memoryId": "mm-..."
+          }],
+          "id": 8
+        }'
+```
+
+**批量获取节点:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memory.Batch",
+          "params": [{
+            "requests": [
+              {"memoryId": "mm-...", "path": "/info/status"},
+              {"memoryId": "mm-...", "path": "/info/config"}
+            ]
+          }],
+          "id": 9
+        }'
+```
+
+**应用模板:**
+
+```bash
+curl -X POST http://localhost:18080/rpc \
+     -H 'Content-Type: application/json' \
+     -d '{
+          "jsonrpc": "2.0",
+          "method": "memManager.ApplyTemplate",
+          "params": [{
+            "memoryId": "mm-...",
+            "template": [
+              {
+                "name": "Status Node",
+                "path": "/info/status",
+                "type": "json",
+                "needInit": false,
+                "content": "{\"online\": true}"
+              },
+              {
+                "name": "Config Node",
+                "path": "/info/config",
+                "type": "json",
+                "needInit": true
+              }
+            ]
+          }],
+          "id": 10
+        }'
+```
+
 ## 开发
 
 *   **模型修改:** 编辑 `internal/models/models.go` 文件。
