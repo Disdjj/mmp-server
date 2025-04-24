@@ -30,10 +30,15 @@ func main() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		if dbDriver == "sqlite" {
-			dbURL = "mmp.db" // Default SQLite file name
+			dbURL = "data/mmp.db" // Default SQLite file in data directory
 		} else {
 			log.Fatal("DATABASE_URL environment variable is not set for non-sqlite driver")
 		}
+	}
+
+	// 确保data目录存在
+	if dbDriver == "sqlite" && dbURL == "data/mmp.db" {
+		os.MkdirAll("data", 0755)
 	}
 
 	db, err := initializeDatabase(dbDriver, dbURL)

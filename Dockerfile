@@ -30,7 +30,10 @@ WORKDIR /app/
 COPY --from=builder /mmp-server .
 
 # If using SQLite with file-based storage, create a volume for the DB file
-# VOLUME /app/data
+VOLUME /app/data
+
+# Create directory for SQLite database
+RUN mkdir -p /app/data
 
 # Expose port 18080
 EXPOSE 18080

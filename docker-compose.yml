@@ -27,10 +27,13 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "18080:8080"
+      - "18080:18080"
     environment:
       DB_DRIVER: ${DB_DRIVER:-postgres}
       DATABASE_URL: ${DATABASE_URL:-host=db port=5432 user=user password=password dbname=mmp_db sslmode=disable}
+    volumes:
+      - sqlite_data:/app/data
 
 volumes:
   postgres_data:
+  sqlite_data:
