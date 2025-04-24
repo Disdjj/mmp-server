@@ -17,7 +17,7 @@ COPY . .
 
 # Build the application (CGO enabled by default)
 # RUN CGO_ENABLED=0 GOOS=linux go build -o /mmp-server ./cmd/mmp-server
-RUN go build -o /mmp-server ./cmd/mmp-server
+RUN go build -o /mmp-server ./main.go
 
 # Final stage
 FROM alpine:latest
