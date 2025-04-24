@@ -42,6 +42,39 @@
 
 确保你已经安装了 Docker 和 Docker Compose。
 
+### 使用预构建镜像快速启动（SQLite模式）
+
+如果你想快速启动服务并使用SQLite作为数据库，可以使用以下命令：
+
+```bash
+# 创建本地数据目录
+mkdir -p data
+
+# 运行容器，将数据目录挂载到容器中用于持久化存储
+docker run -d \
+  --name mmp-server \
+  -p 18080:18080 \
+  -e DB_DRIVER=sqlite \
+  -e DATABASE_URL=data/mmp.db \
+  -v $(pwd)/data:/app/data \
+  docker.io/pdjjq/mmp-server:v1.0.1
+```
+
+Windows系统下使用PowerShell的命令：
+
+```powershell
+# 创建本地数据目录
+mkdir -Force data
+
+# 运行容器，将数据目录挂载到容器中用于持久化存储
+
+docker run -d --name mmp-server -p 18080:18080 -e DB_DRIVER=sqlite -e DATABASE_URL=data/mmp.db -v ./data:/app/data docker.io/pdjjq/mmp-server:v1.0.1
+```
+
+服务启动后，可以通过 http://localhost:18080/ 访问Web界面。
+
+### 使用Docker Compose
+
 **默认使用 PostgreSQL:**
 
 1.  **构建并启动服务:**

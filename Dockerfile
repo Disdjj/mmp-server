@@ -28,6 +28,7 @@ WORKDIR /app/
 
 # Copy the pre-built binary file from the previous stage
 COPY --from=builder /mmp-server .
+COPY --from=builder /app/static ./static
 
 # If using SQLite with file-based storage, create a volume for the DB file
 VOLUME /app/data

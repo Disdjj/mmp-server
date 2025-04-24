@@ -721,7 +721,7 @@ func (s *Server) Batch(r *http.Request, args *BatchRequest, result *[]interface{
 
 // ServeStaticFiles sets up handlers for serving static files from the static directory
 func (s *Server) ServeStaticFiles(mux *http.ServeMux) {
-	fs := http.FileServer(http.Dir("internal/server/static"))
+	fs := http.FileServer(http.Dir("./static"))
 	mux.Handle("/", fs)
 }
 
